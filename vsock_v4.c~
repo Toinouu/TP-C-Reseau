@@ -25,8 +25,8 @@ void construire_message (char *message, char motif, int lg,int compt) {
   int i;
   for (i=5 ; i<lg; i++) message[i] = motif; }
 
-void afficher_donnees(int lg , int nbmsg , int source){
-  if (source == 1){
+void afficher_donnees(int lg , int nbmsg , int s){
+  if (s == 1){
     printf("SOURCE : lg_message=%d, nb message=%d, ",lg,nbmsg);
   }
   else{
@@ -53,14 +53,6 @@ void afficher_message (char *message, int lg,int source, int nbmsg,int compt) {
   printf("]");
   printf("\n");
 }
-  
-    
-
-  
-
-
-
-
 
 int main(int argc, char **argv)
 {
@@ -70,23 +62,26 @@ int main(int argc, char **argv)
   int nb_message = -1; /* Nb de messages à envoyer ou à recevoir, par défaut : 10 en émission, infini en réception */
   int source = -1 ; /* 0=puits, 1=source */
   int lg_message = 30; //Sert pour le -l
-  int udp = 0; 
+  int udp = 0;
+  int B = 0;
+  int E = -1 ;
+  int id_r ;
   
-  while ((c = getopt(argc, argv, "pn:sul:")) != -1) {
+  while ((c = getopt(argc, argv, "be:r:pn:sul:")) != -1) {
     switch (c) {
     case 'p':
-      if (source == 1) {
+       if (source == 1) {
 	printf("usage: cmd [-p|-s][-n ##]\n");
 	exit(1);
-      }
+	}
       source = 0;
       break;
 
     case 's':
-      if (source == 0) {
+       if (source == 0) {
 	printf("usage: cmd [-p|-s][-n ##]\n");
 	exit(1) ;
-      }
+	}
       source = 1;
       break;
 
@@ -101,6 +96,23 @@ int main(int argc, char **argv)
     case'l':
       lg_message=atoi(optarg);
       break;
+
+    case 'b' :
+      B=1 ;
+      break ;
+      
+    case 'e' :
+      E=1 ;
+      id_r = atoi(optarg);
+      printf("%d",id_r);
+      break ;
+      
+    case 'r' :
+      E=0 ;
+      id_r = atoi(optarg);
+      break ;
+      
+
       
     default:
       printf("usage: cmd [-p|-s][-n ##]\n");
@@ -119,9 +131,11 @@ int main(int argc, char **argv)
       afficher_donnees(lg_message , nb_message , source);
       
     
-    else // Si on reçoit
+    else if (E==-1) // Si on reçoit
       afficher_donnees(lg_message , nb_message , source);
     
+    else if (E==1)
+      afficher_donnees(lg_message , nb_message , 1);
   }
   else { //Si -n  nn spécifiée
     
@@ -130,15 +144,17 @@ int main(int argc, char **argv)
      
       nb_message = 10 ;
       afficher_donnees(lg_message , nb_message , source);
-      
-    }
-    else // Si on reçoit
+          }
+    else if (E ==-1) // Si on reçoit
       afficher_donnees(lg_message , nb_message , source);
-     
+    else if (E==1){
+      nb_message=10 ;
+      afficher_donnees(lg_message , 10 , 1);
+    }
   }
 
 
-  if (source == -1) {
+  if (source == -1 && E==-1) {
     printf("usage: cmd [-p|-s][-n ##]\n");
     exit(1) ;
   }
@@ -227,7 +243,7 @@ int main(int argc, char **argv)
       
     }
   }
-  else{                                   /* PUIT */
+  else if (E==-1)  {                                   /* PUIT */
     
     if (udp==1){  // Pour le mode UDP
       
@@ -310,8 +326,116 @@ int main(int argc, char **argv)
 
   
     }
-  } 
-  
+  }
+
+  if ( E == 1){          //On souhaite envoyer à une BAL
+    
+    struct sockaddr_in adr_distant;
+    struct hostent * hp;
+    int sock;
+    char * msg;
+    char * msg_bal ;
+    char motif = 'a';
+    unsigned int adr_lg=sizeof(struct sockaddr_in);
+    int i ;
+    int succes ;
+
+    /* Création socket */
+    sock=socket(AF_INET,SOCK_STREAM,0);
+    adr_distant.sin_port=htons(atoi(argv[argc-1]));
+    hp = gethostbyname(argv[argc-2]);
+    memcpy((char*)&(adr_distant.sin_addr.s_addr),hp->h_addr,hp->h_length);
+    adr_distant.sin_family=AF_INET;
+
+    //Requete connexion
+    succes = connect(sock,(struct sockaddr *)&adr_distant,adr_lg) ;
+    printf("Port=%s, proto=TCP, dest -> %s \n",argv[argc-1],argv[argc-2]);
+    if (succes == 0){
+      printf("SOURCE : Connexion etablie \n");
+    }
+    else {
+      printf("SOURCE : Connexion refusée \n");
+      exit(1) ;
+    }
+
+    //Informer serveur BAL
+    // msg_bal=malloc(sizeof("E")) ; //On envoie une première lettre "E"
+    //msg_bal="E" ;
+    //send(sock,msg_bal,sizeof("E"),0);
+    
+    msg_bal=malloc(sizeof(nb_message)) ; //On envoie une deuxième lettre avec le nombre de lettre à envoyer
+    sprintf(msg_bal,"%d",nb_message) ; //à voir
+    send(sock,msg_bal,sizeof(nb_message),0);
+    
+    msg_bal=malloc(sizeof(id_r)) ; //On envoie une troisième lettre avec l'identifiant du destinataire
+    sprintf(msg_bal,"%d",id_r) ;
+    send(sock,msg_bal,sizeof(id_r),0);
+    // Emission message
+    
+    msg=malloc(nb_message*sizeof(lg_message));
+    for (i=0;i<nb_message;i++){
+      if (motif=='{'){
+	motif='a';
+      }
+      construire_message(msg,motif,lg_message,id_r);
+      afficher_message(msg,lg_message,source,nb_message,i+1);
+      motif= motif+1;
+      send(sock,msg,lg_message,0);
+    }
+
+    //Fermeture connexion
+    shutdown(sock,1) ;
+    
+  }
+  /*else if (B==1){  //Cas où on crée une BAL
+    
+    struct sockaddr_in adr_local;
+    int sock;
+    int sockbis ;
+    struct sockaddr_in adr_distant;
+    char * adr_msg;
+    adr_msg=malloc(sizeof(lg_message));
+    int lg_eff;
+    unsigned int adr_lg=sizeof(struct sockaddr_in);
+    int i=0;
+      
+    // Création socket distant
+    sock=socket(AF_INET,SOCK_STREAM,0);
+    adr_local.sin_port=htons(atoi(argv[argc-1]));
+    adr_local.sin_addr.s_addr = INADDR_ANY ;
+    adr_local.sin_family=AF_INET;
+
+    // Association @->socket
+    bind(sock,(struct sockaddr *)&adr_local,sizeof(adr_local));
+    printf("Port=%s, proto=UDP, \n",argv[argc-1]);
+    
+    //Bufferisation des requêtes
+    listen(sock, 5);
+      
+    // Mise en état d'acceptation
+    sockbis=accept(sock,(struct sockaddr *)&adr_distant,&adr_lg); 
+      
+    if (sockbis==-1){
+      printf("PUITS : Echec de la connexion\n");
+    }
+    else{
+      printf("PUITS : Connexion accepté\n");
+    }
+      
+      
+    // Reception + affichage msg
+     
+    lg_eff=recv(sockbis,adr_msg,lg_message,0);
+    if (adr_msg=='E'){ //Cas où requête emettrice
+	
+    }
+      
+    else { //Cas où requête réceptrice
+	
+    }
+  }*/
+
 }
- 
+
+
   

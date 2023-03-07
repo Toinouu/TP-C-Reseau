@@ -155,7 +155,7 @@ int main(int argc, char **argv)
       char * msg;
       char motif = 'a';
       unsigned int adr_lg=sizeof(struct sockaddr_in);
-      int i=0 ;
+      int i ;
 
       /* Création socket */
       sock=socket(AF_INET,SOCK_DGRAM,0);
