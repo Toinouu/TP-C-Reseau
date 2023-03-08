@@ -39,9 +39,10 @@ void afficher_donnees(int lg , int nbmsg , int s){
  
 }
 
-void afficher_message (char *message, int lg,int source, int nbmsg,int compt) {
+// Fonction afficher message pour la partie 1 
+void afficher_message1 (char *message, int lg,int s, int nbmsg,int compt) {
   int i;
-  if(source==1){
+  if(s==1){
     printf("SOURCE : Envoi n°%5d (%5d) ",compt,lg);
   }
   else{
@@ -54,6 +55,24 @@ void afficher_message (char *message, int lg,int source, int nbmsg,int compt) {
   printf("\n");
 }
 
+// Fonction afficher message pour la partie 2
+void afficher_message2 (char *message, int lg,int s, int nbmsg,int compt,int idr) {
+  int i;
+  if(s==1){
+    printf("SOURCE : Envoi n°%5d (%5d) ",compt,lg);
+  }
+  else{
+    printf("PUITS: Reception n°%5d (%5d)",compt,lg);
+  }
+  printf("[");
+  printf("%5d",idr);
+  for (i=5 ; i<lg ; i++) printf("%c", message[i]) ;
+  printf("]");
+  printf("\n");
+}
+
+
+
 int main(int argc, char **argv)
 {
   int c;
@@ -63,7 +82,7 @@ int main(int argc, char **argv)
   int source = -1 ; /* 0=puits, 1=source */
   int lg_message = 30; //Sert pour le -l
   int udp = 0;
-  int B = 0;
+  int B = -1 ;
   int E = -1 ;
   int id_r ;
   
@@ -104,7 +123,6 @@ int main(int argc, char **argv)
     case 'e' :
       E=1 ;
       id_r = atoi(optarg);
-      printf("%d",id_r);
       break ;
       
     case 'r' :
@@ -127,41 +145,35 @@ int main(int argc, char **argv)
 
   if (nb_message != -1) { //Si -n spécifiée
     
-    if (source == 1) // Si on envoie
-      afficher_donnees(lg_message , nb_message , source);
+    if (source == 1 || E==1) // Si on envoie
+      afficher_donnees(lg_message , nb_message , 1);
       
     
     else if (E==-1) // Si on reçoit
       afficher_donnees(lg_message , nb_message , source);
     
-    else if (E==1)
-      afficher_donnees(lg_message , nb_message , 1);
   }
   else { //Si -n  nn spécifiée
     
-    if (source == 1) { // Si on envoie
-
-     
+    if (source == 1 || E==1 ) { // Si on envoie
       nb_message = 10 ;
-      afficher_donnees(lg_message , nb_message , source);
+      afficher_donnees(lg_message , nb_message , 1);
           }
     else if (E ==-1) // Si on reçoit
       afficher_donnees(lg_message , nb_message , source);
-    else if (E==1){
-      nb_message=10 ;
-      afficher_donnees(lg_message , 10 , 1);
-    }
+    
   }
 
 
-  if (source == -1 && E==-1) {
+  if (source == -1 && E==-1 && B==-1) {
     printf("usage: cmd [-p|-s][-n ##]\n");
     exit(1) ;
   }
 
   /*=============================================================================*/
+  //Partie 1
   
-  if (source == 1){                        /*Source*/   
+  if (source == 1 && E==-1 && B==-1){                        /*Source*/   
 
     if (udp==1){                          //Si on est en mode UDP
       
@@ -189,7 +201,7 @@ int main(int argc, char **argv)
 	}
 	construire_message(msg,motif,lg_message,i);
 	
-	afficher_message(msg,lg_message,source,nb_message,i+1);
+	afficher_message1(msg,lg_message,source,nb_message,i+1);
 	motif += 1;
 	sendto(sock,msg,lg_message,0,(struct sockaddr *)&adr_distant,adr_lg);
       }
@@ -232,7 +244,7 @@ int main(int argc, char **argv)
 	  motif='a';
 	}
 	construire_message(msg,motif,lg_message,i);
-	afficher_message(msg,lg_message,source,nb_message,i+1);
+	afficher_message1(msg,lg_message,source,nb_message,i+1);
 	motif= motif+1;
 	send(sock,msg,lg_message,0);
       }
@@ -243,7 +255,7 @@ int main(int argc, char **argv)
       
     }
   }
-  else if (E==-1)  {                                   /* PUIT */
+  else if (source==0 && E==-1 && B==-1)  {                                   /* PUIT */
     
     if (udp==1){  // Pour le mode UDP
       
@@ -269,7 +281,7 @@ int main(int argc, char **argv)
       printf("Port=%s, proto=UDP, \n",argv[argc-1]);
       while(i!=nb_message){
 	lg_eff=recvfrom(sock,adr_msg,lg_message,0,(struct sockaddr *)&adr_distant,&adr_lg);
-	afficher_message(adr_msg,lg_eff,source,nb_message,i+1);
+	afficher_message1(adr_msg,lg_eff,source,nb_message,i+1);
       
 	i++;
       }
@@ -315,7 +327,7 @@ int main(int argc, char **argv)
       while(i!=nb_message){
 	lg_eff=recv(sockbis,adr_msg,lg_message,0);
 	if (lg_eff !=0){
-	  afficher_message(adr_msg,lg_eff,source,nb_message,i+1);
+	  afficher_message1(adr_msg,lg_eff,source,nb_message,i+1);
 	}
 	else{  //On ne reçoit un message que s'il n'est pas vide
 	  exit(1);
@@ -328,7 +340,10 @@ int main(int argc, char **argv)
     }
   }
 
-  if ( E == 1){          //On souhaite envoyer à une BAL
+  /*=============================================================================*/
+  
+  //Partie 2
+  if (E == 1){          //On souhaite envoyer à une BAL
     
     struct sockaddr_in adr_distant;
     struct hostent * hp;
@@ -363,13 +378,12 @@ int main(int argc, char **argv)
     msg_bal="E" ;
     send(sock,msg_bal,sizeof("E"),0);
     
-    msg_bal=malloc(sizeof(nb_message)) ; //On envoie une deuxième lettre avec le nombre de lettre à envoyer
+    msg_bal=malloc(nb_message) ; //On envoie une deuxième lettre avec le nombre de lettre à envoyer
     
     sprintf(msg_bal,"%d",nb_message) ; //à voir
-    printf("%s",msg_bal);
     send(sock,msg_bal,strlen(msg_bal),0);
     
-    msg_bal=malloc(sizeof(id_r)) ; //On envoie une troisième lettre avec l'identifiant du destinataire
+    msg_bal=malloc(id_r) ; //On envoie une troisième lettre avec l'identifiant du destinataire
     sprintf(msg_bal,"%d",id_r) ;
     send(sock,msg_bal,strlen(msg_bal),0);
     
@@ -380,7 +394,7 @@ int main(int argc, char **argv)
 	motif='a';
       }
       construire_message(msg,motif,lg_message,id_r);
-      afficher_message(msg,lg_message,source,nb_message,id_r);
+      afficher_message2(msg,lg_message,1,nb_message,i+1,id_r);
       motif= motif+1;
       send(sock,msg,lg_message,0);
       }
@@ -428,14 +442,16 @@ int main(int argc, char **argv)
     // Reception + affichage msg
      
     lg_eff=recv(sockbis,adr_msg,4,0); //On rappelle que l'en tête fait 4 octets par convention
+    afficher_message2(adr_msg,lg_eff,1,2,1,1);
     if (adr_msg[0]=='E'){ //Cas où requête emettrice
-      nb_message=atoi(strcat(adr_msg[1],adr_msg[2]));
-      printf("%d",a);
-      for (i=0, i<a,i++){
+      nb_message=adr_msg[1]+adr_msg[2];
+      for(i=0;i<30;i++) printf("ca %c ca ",adr_msg[i]); //problème avec structure de notre message
+      
+      for (i=0; i<nb_message;i++){
 	read(sockbis,adr_msg,lg_message);
-	afficher_message(adr_msg,lg_message,);
+
       }
-      }
+    }
       
     else if (adr_msg[0]=='R') { //Cas où requête réceptrice
 	
