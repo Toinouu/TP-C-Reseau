@@ -23,8 +23,13 @@
 
 void construire_message (char *message, char motif, int lg,int compt) {
   int i;
-  for (i=5 ; i<lg; i++) message[i] = motif; }
-
+  char num_msg[6]= "";
+  
+  sprintf(num_msg, "%5d",compt);
+  memcpy(message ,num_msg,5);
+  
+  for (i=6 ; i<=lg; i++) message[i] = motif; 
+}
 void afficher_donnees(int lg , int nbmsg , int s){
   if (s == 1){
     printf("SOURCE : lg_message=%d, nb message=%d, ",lg,nbmsg);
@@ -49,8 +54,7 @@ void afficher_message1 (char *message, int lg,int s, int nbmsg,int compt) {
     printf("PUITS: Reception n°%5d (%5d)",compt,lg);
   }
   printf("[");
-  printf("%5d",compt);
-  for (i=5 ; i<lg ; i++) printf("%c", message[i]) ;
+  for (i=0 ; i<=lg ; i++) printf("%c", message[i]) ;
   printf("]");
   printf("\n");
 }
@@ -65,8 +69,7 @@ void afficher_message2 (char *message, int lg,int s, int nbmsg,int compt,int idr
     printf("PUITS: Reception n°%5d (%5d)",compt,lg);
   }
   printf("[");
-  printf("%5d",idr);
-  for (i=5 ; i<lg ; i++) printf("%c", message[i]) ;
+  for (i=0 ; i<=lg ; i++) printf("%c", message[i]) ;
   printf("]");
   printf("\n");
 }
@@ -199,7 +202,7 @@ int main(int argc, char **argv)
 	if (motif=='{'){
 	  motif='a';
 	}
-	construire_message(msg,motif,lg_message,i);
+	construire_message(msg,motif,lg_message,i+1);
 	
 	afficher_message1(msg,lg_message,source,nb_message,i+1);
 	motif += 1;
@@ -243,7 +246,7 @@ int main(int argc, char **argv)
 	if (motif=='{'){
 	  motif='a';
 	}
-	construire_message(msg,motif,lg_message,i);
+	construire_message(msg,motif,lg_message,i+1);
 	afficher_message1(msg,lg_message,source,nb_message,i+1);
 	motif= motif+1;
 	send(sock,msg,lg_message,0);
@@ -376,16 +379,18 @@ int main(int argc, char **argv)
     //Informer serveur BAL : convention : l'en-tête fait toujours 4 octets
     msg_bal=malloc(sizeof("E")) ; //On envoie une première lettre "E"
     msg_bal="E" ;
-    send(sock,msg_bal,sizeof("E"),0);
-    
+    send(sock,msg_bal,strlen(msg_bal),0);
+    afficher_message1(msg_bal,strlen(msg_bal),1,1,1);
     msg_bal=malloc(nb_message) ; //On envoie une deuxième lettre avec le nombre de lettre à envoyer
     
     sprintf(msg_bal,"%d",nb_message) ; //à voir
     send(sock,msg_bal,strlen(msg_bal),0);
+    afficher_message1(msg_bal,strlen(msg_bal),1,1,1);
     
     msg_bal=malloc(id_r) ; //On envoie une troisième lettre avec l'identifiant du destinataire
     sprintf(msg_bal,"%d",id_r) ;
     send(sock,msg_bal,strlen(msg_bal),0);
+    afficher_message1(msg_bal,strlen(msg_bal),1,1,1);
     
     // Emission message
     msg=malloc(nb_message*sizeof(lg_message));
@@ -441,15 +446,25 @@ int main(int argc, char **argv)
       
     // Reception + affichage msg
      
-    lg_eff=recv(sockbis,adr_msg,4,0); //On rappelle que l'en tête fait 4 octets par convention
-    afficher_message2(adr_msg,lg_eff,1,2,1,1);
+    lg_eff=recv(sockbis,adr_msg,1,0); //On rappelle que l'en tête fait 4 octets par convention
+    afficher_message1(adr_msg,lg_eff,1,1,1);
+    // afficher_message2(adr_msg,lg_eff,1,2,1,1);
     if (adr_msg[0]=='E'){ //Cas où requête emettrice
-      nb_message=adr_msg[1]+adr_msg[2];
-      for(i=0;i<30;i++) printf("ca %c ca ",adr_msg[i]); //problème avec structure de notre message
+      printf("Un émetteur à envoyé un message , %s\n", adr_msg);
+      lg_eff=recv(sockbis,adr_msg,2,0);
+      afficher_message1(adr_msg,lg_eff,1,1,1);
+      int nb_msg = atoi(adr_msg) ;
+      lg_eff=recv(sockbis,adr_msg,1,0);
+      afficher_message1(adr_msg,lg_eff,1,1,1);
+      int num_rec = atoi(adr_msg) ;
+      printf("nombre message ,%d\n",nb_msg);
+      printf("num recep,%d\n",num_rec);
       
-      for (i=0; i<nb_message;i++){
+       //problème avec structure de notre message
+      
+      for (i=0; i<=nb_msg;i++){
 	read(sockbis,adr_msg,lg_message);
-
+ 
       }
     }
       
