@@ -11,7 +11,7 @@
 /* constantes et structures propres au domaine INTERNET */
 #include <netinet/in.h>
 /* structures retournées par les fonctions de gestion de la base de
-   données du réseau */
+  données du réseau */
 #include <netdb.h>
 /* pour les entrées/sorties */
 #include <stdio.h>
@@ -21,23 +21,21 @@
 
 
 
+typedef struct lettres_i{
+
+  char * contenu;
+  struct lettres_i * lettres_suiv ;
+
+}liste_lettres;
 
 typedef struct bal_i{
 
   int num_bal;
-  struct lettres_i * lettres;
+  liste_lettres * lettres;
   struct bal_i * bal_suiv ;
   
-  
-
 }Liste_bal;
 
-typedef struct lettres_i{
-
-   char * contenu;
-  struct lettres_i * lettres_suiv ;
-
-}liste_lettres;
 
 
 
@@ -62,7 +60,7 @@ void afficher_donnees(int lg , int nbmsg , int s){
       printf("PUITS : lg_message=%d, nb message=%d ",lg,nbmsg);
     }
   }
- 
+
 }
 
 // Fonction afficher message pour la partie 1 
@@ -95,7 +93,7 @@ void afficher_message2 (char *message, int lg,int s,int compt,int idr) {
   else if (s==-1)
     printf("PUITS: Reception et stockage lettre n°%2d pour le recepteur n°%2d",compt,idr);
   printf("[");
-  for (i=0 ; i<=lg ; i++) printf("%c", message[i]) ;
+  for (i=0 ; i<lg ; i++) printf("%c", message[i]) ;
   printf("]");
   printf("\n");
 }
@@ -119,16 +117,16 @@ int main(int argc, char **argv)
     switch (c) {
     case 'p':
       if (source == 1) {
-	printf("usage: cmd [-p|-s][-n ##]\n");
-	exit(1);
+  printf("usage: cmd [-p|-s][-n ##]\n");
+  exit(1);
       }
       source = 0;
       break;
 
     case 's':
       if (source == 0) {
-	printf("usage: cmd [-p|-s][-n ##]\n");
-	exit(1) ;
+  printf("usage: cmd [-p|-s][-n ##]\n");
+  exit(1) ;
       }
       source = 1;
       break;
@@ -215,7 +213,7 @@ int main(int argc, char **argv)
       int i=0 ;
 
 
-	
+  
       /* Création socket */
       sock=socket(AF_INET,SOCK_DGRAM,0);
       adr_distant.sin_port=htons(atoi(argv[argc-1]));
@@ -227,16 +225,16 @@ int main(int argc, char **argv)
       msg=malloc(nb_message*sizeof(lg_message));
       printf("Port=%s, proto=UDP, dest -> %s \n",argv[argc-1],argv[argc-2]);
       for (i=0;i<nb_message;i++){
-	if (motif=='{'){
-	  motif='a';
-	}
-	construire_message(msg,motif,lg_message,i+1);
-	
-	afficher_message1(msg,lg_message,source,i+1);
-	motif += 1;
-	sendto(sock,msg,lg_message,0,(struct sockaddr *)&adr_distant,adr_lg);
+  if (motif=='{'){
+    motif='a';
+  }
+  construire_message(msg,motif,lg_message,i+1);
+  
+  afficher_message1(msg,lg_message,source,i+1);
+  motif += 1;
+  sendto(sock,msg,lg_message,0,(struct sockaddr *)&adr_distant,adr_lg);
       }
-     		      
+              
     }
     else{                                //Si on est en mode TCP
 
@@ -260,24 +258,24 @@ int main(int argc, char **argv)
       succes = connect(sock,(struct sockaddr *)&adr_distant,adr_lg) ;
       printf("Port=%s, proto=TCP, dest -> %s \n",argv[argc-1],argv[argc-2]);
       if (succes == 0){
-	printf("SOURCE : Connexion etablie \n");
+  printf("SOURCE : Connexion etablie \n");
       }
       else {
-	printf("SOURCE : Connexion refusée \n");
-	exit(1) ;
+  printf("SOURCE : Connexion refusée \n");
+  exit(1) ;
       }
       
       // Emission message
       
       msg=malloc(nb_message*sizeof(lg_message));
       for (i=0;i<nb_message;i++){
-	if (motif=='{'){
-	  motif='a';
-	}
-	construire_message(msg,motif,lg_message,i+1);
-	afficher_message1(msg,lg_message,source,i+1);
-	motif= motif+1;
-	send(sock,msg,lg_message,0);
+  if (motif=='{'){
+    motif='a';
+  }
+  construire_message(msg,motif,lg_message,i+1);
+  afficher_message1(msg,lg_message,source,i+1);
+  motif= motif+1;
+  send(sock,msg,lg_message,0);
       }
 
       //Fermeture connexion
@@ -311,10 +309,10 @@ int main(int argc, char **argv)
       // Reception + affichage msg
       printf("Port=%s, proto=UDP, \n",argv[argc-1]);
       while(i!=nb_message){
-	lg_eff=recvfrom(sock,adr_msg,lg_message,0,(struct sockaddr *)&adr_distant,&adr_lg);
-	afficher_message1(adr_msg,lg_eff,source,i+1);
+  lg_eff=recvfrom(sock,adr_msg,lg_message,0,(struct sockaddr *)&adr_distant,&adr_lg);
+  afficher_message1(adr_msg,lg_eff,source,i+1);
       
-	i++;
+  i++;
       }
     
     }
@@ -346,24 +344,24 @@ int main(int argc, char **argv)
       sockbis=accept(sock,(struct sockaddr *)&adr_distant,&adr_lg); 
       
       if (sockbis==-1){
-	printf("PUITS : Echec de la connexion\n");
+  printf("PUITS : Echec de la connexion\n");
       }
       else{
-	printf("PUITS : Connexion accepté\n");
+  printf("PUITS : Connexion accepté\n");
       }
       
       
       // Reception + affichage msg
-     
+    
       while(i!=nb_message){
-	lg_eff=recv(sockbis,adr_msg,lg_message,0);
-	if (lg_eff !=0){
-	  afficher_message1(adr_msg,lg_eff,source,i+1);
-	}
-	else{  //On ne reçoit un message que s'il n'est pas vide
-	  exit(1);
-	}
-	i++;
+  lg_eff=recv(sockbis,adr_msg,lg_message,0);
+  if (lg_eff !=0){
+    afficher_message1(adr_msg,lg_eff,source,i+1);
+  }
+  else{  //On ne reçoit un message que s'il n'est pas vide
+    exit(1);
+  }
+  i++;
       }
 
 
@@ -422,7 +420,7 @@ int main(int argc, char **argv)
       send(sock,msg_bal,strlen(msg_bal),0);
       afficher_message1(msg_bal,strlen(msg_bal),1,1);
     }
-   
+  
     if(id_r<10){
       msg_bal=malloc(id_r) ; //On envoie une troisième lettre avec l'identifiant du destinataire
       sprintf(msg_bal,"-%d",id_r) ;
@@ -435,12 +433,12 @@ int main(int argc, char **argv)
       afficher_message1(msg_bal,strlen(msg_bal),1,1);
     }
 
-       
+      
     // Emission message
     msg=malloc(nb_message*sizeof(lg_message));
     for (i=0;i<nb_message;i++){
       if (motif=='{'){
-	motif='a';
+  motif='a';
       }
       construire_message(msg,motif,lg_message,id_r);
       afficher_message2(msg,lg_message,1,i+1,id_r);
@@ -463,11 +461,8 @@ int main(int argc, char **argv)
     int lg_eff;
     unsigned int adr_lg=sizeof(struct sockaddr_in);
     int i=0;
-    Liste_bal * ListedeBal;
-    ListedeBal = malloc(sizeof(Liste_bal));
-    Liste_bal * tmp ;
-    Liste_bal * tmp2 ;
-    liste_lettres * tmp3 ;
+    Liste_bal * ListedeBal = malloc(sizeof(Liste_bal));
+    ListedeBal = NULL;
       
     // Création socket distant
     sock=socket(AF_INET,SOCK_STREAM,0);
@@ -487,10 +482,10 @@ int main(int argc, char **argv)
       sockbis=accept(sock,(struct sockaddr *)&adr_distant,&adr_lg); 
       
       if (sockbis==-1){
-	printf("PUITS : Echec de la connexion\n");
+  printf("PUITS : Echec de la connexion\n");
       }
       else{
-	printf("PUITS : Connexion accepté\n");
+  printf("PUITS : Connexion accepté\n");
       }
       
       
@@ -501,132 +496,123 @@ int main(int argc, char **argv)
       lg_eff=recv(sockbis,adr_msg,1,0); 
       afficher_message1(adr_msg,lg_eff,1,1);
 
+
       //Cas où requête emettrice
-    
       if (adr_msg[0]=='E'){ 
-	printf("Un émetteur à envoyé un message , %s\n", adr_msg);
-	lg_eff=recv(sockbis,adr_msg,2,0);
-	afficher_message1(adr_msg,lg_eff,1,1);
-
-	//Traitement 2ème et 3ème octets
-	if(adr_msg[0]=='-'){
-	  adr_msg++;
-	}
-      
-	nb_message = atoi(adr_msg) ;
-	printf("%d\n",nb_message);
-
-      
-	//Traitement 4ème et 5ème octets
-	lg_eff=recv(sockbis,adr_msg,2,0);
-	afficher_message1(adr_msg,lg_eff,1,1);
-      
-	if(adr_msg[0]=='-'){
-	  adr_msg++;
-	}
-
-	id_r = atoi(adr_msg) ;
-	printf("nombre message ,%d\n",nb_message);
-	printf("num recep,%d\n",id_r);
-    
-	//Reception et stockage des n messages
-	for (i=0; i<nb_message;i++){
-
-	  read(sockbis,adr_msg,lg_message);
-	  afficher_message2(adr_msg,lg_message,-1,i+1,id_r);
-	 
-
-	  //Cas où aucune BAL est presente
-	  if(ListedeBal == NULL){
-	    ListedeBal->lettres = malloc(sizeof(liste_lettres));
-	    ListedeBal->bal_suiv= NULL;
-	    ListedeBal -> num_bal = id_r;
-	    ListedeBal -> lettres -> contenu = adr_msg ;
-	    ListedeBal -> lettres -> lettres_suiv = NULL;  
-	  }
-	  //On cherche si la bal_i existe
-	  else {
-
-	    tmp = ListedeBal ;
-	    while(tmp -> num_bal == id_r && tmp -> bal_suiv != NULL){
-	      	tmp = tmp -> bal_suiv;
-	    }
-	    //Si la bal_i n'existe pas : on la crée et on y insère les lettres
-	    if (tmp -> bal_suiv == NULL){
-	      tmp -> bal_suiv = malloc(sizeof(ListedeBal));
-	      tmp2 = tmp ;
-	      tmp2 -> num_bal = id_r;
-	      tmp2 -> bal_suiv= NULL;
-	      tmp2 -> lettres = malloc(sizeof(liste_lettres));
-	      tmp2 -> lettres -> contenu = adr_msg ;
-	      tmp2 -> lettres -> lettres_suiv = NULL;
-	    }
-	    
-	    //Si elle existe : on insère à la fin de la liste les nouvelles lettres
-	    else if (tmp -> num_bal == id_r){
-	      tmp3= tmp->lettres  ;
-	      while(tmp3 -> lettres_suiv !=NULL){
-		tmp3 = tmp3 -> lettres_suiv;
-
-	      }
-	      //malloc
-	      //inserer lettre a adr_msg
-	      
-	    }
-	     
-	      
+      lg_eff=recv(sockbis,adr_msg,2,0);
 
 
-	  }
+      //Traitement 2ème et 3ème octets
+      if(adr_msg[0]=='-'){
+        adr_msg++;
+      }    
+      nb_message = atoi(adr_msg) ;
 
-
-
-	  
-	  
-	}
+          
+      //Traitement 4ème et 5ème octets
+      lg_eff=recv(sockbis,adr_msg,2,0);
+      if(adr_msg[0]=='-'){
+        adr_msg++;
       }
+      id_r = atoi(adr_msg) ;
+        
 
-      //Stockage des messages
 
-
+      //Reception et stockage des n messages
       
+      for (i=0; i<nb_message;i++){
+        read(sockbis,adr_msg,lg_message);
+        afficher_message2(adr_msg,lg_message,-1,i+1,id_r);
+        //liste_lettres * new_lettres =(liste_lettres*)malloc(sizeof(liste_lettres));
+        //new_lettres -> contenu = adr_msg;
+        //new_lettres->lettres_suiv = NULL;
 
-
-
-
-
-
-
-
-
+        
+        //Cas où aucune BAL est presente
       
-    
+          Liste_bal * bal_courante = ListedeBal ;
+          Liste_bal * bal_preced = NULL;
+          while(bal_courante != NULL && bal_courante -> num_bal != id_r  ){
+
+              bal_preced = bal_courante ;
+              bal_courante = bal_courante -> bal_suiv;
+              
+          }
+          //Si la bal_i n'existe pas : on la crée et on y insère les lettres
+          if (bal_courante == NULL){
+            
+            bal_courante = malloc(sizeof(Liste_bal));
+            bal_courante->num_bal = id_r;
+            bal_courante->bal_suiv = NULL;
+            bal_courante -> lettres = malloc(sizeof(liste_lettres));
+            bal_courante->lettres -> contenu = adr_msg ;
+            bal_courante->lettres -> lettres_suiv = NULL ;
+            if(ListedeBal==NULL){
+
+              ListedeBal=bal_courante;
+            }
+          
+          }
+          //Si elle existe : on insère à la fin de la liste les nouvelles lettres
+          else if (bal_courante -> num_bal == id_r){
+
+            liste_lettres * derniere_lettres = malloc(sizeof(liste_lettres));
+            liste_lettres * lettres_preced = NULL;
+            derniere_lettres = bal_courante -> lettres;
+
+            while(derniere_lettres !=NULL){
+              lettres_preced = derniere_lettres;
+              derniere_lettres = derniere_lettres-> lettres_suiv;
+            }
+      
+            lettres_preced -> contenu = adr_msg;
+            lettres_preced -> lettres_suiv = NULL;
+            derniere_lettres = lettres_preced;
+
+          }
+      }
+    } 
       //Cas où requête Receptrice
       //Convention l'en-tete fait toujours 3 octets 
-      else if (adr_msg[0]=='R') {
-	
-	//Traitement 2ème et 3ème octets
-	lg_eff=recv(sockbis,adr_msg,2,0);
-	afficher_message1(adr_msg,lg_eff,1,1);
       
-	if(adr_msg[0]=='-'){
-	  adr_msg++;
-	}
+      else if (adr_msg[0]=='R') 
+      {
+        liste_lettres * lettres_i =  malloc(sizeof(liste_lettres));
+        Liste_bal * bal_courante = ListedeBal ;
+        //Traitement 2ème et 3ème octets
+        lg_eff=recv(sockbis,adr_msg,2,0);
+        afficher_message1(adr_msg,lg_eff,1,1);
+            
+        if(adr_msg[0]=='-'){
+          adr_msg++;
+        }
 
-	id_r = atoi(adr_msg) ;
-	printf("num recep,%d\n",id_r);
-    
-	//Envoie des n messages au recepteur
-	for (i=0; i<nb_message;i++){
-	  //send(sockbis,(a voir),lg_message,0);        // A finir quand on a le stockage effectif
-	  afficher_message2(adr_msg,lg_message,0,i+1,id_r);
-	}
+        id_r = atoi(adr_msg) ;
+        printf("num recep,%d\n",id_r);
+          
+        //Envoie des n messages au recepteur
+        for (i=0; i<nb_message;i++){
+        
+        while(bal_courante ->num_bal !=id_r){
+          bal_courante=bal_courante -> bal_suiv;
+        }
+        lettres_i=bal_courante -> lettres;
+
+        while(lettres_i!=NULL){
+        send(sockbis,lettres_i,lg_message,0);
+        afficher_message2(lettres_i,lg_message,0,i+1,id_r);
+        lettres_i = lettres_i -> lettres_suiv;
+        }
+          
+          
+
+                  //send(sockbis,(a voir),lg_message,0);        // A finir quand on a le stockage effectif
+        
+        }
       }
-
-	
     }
-    
-  }else if (E==0){    //Cas ou on souhaite recevoir des messages de la BAL
+  }
+  else if (E==0){    //Cas ou on souhaite recevoir des messages de la BAL
 
     
     struct sockaddr_in adr_distant;
@@ -675,17 +661,18 @@ int main(int argc, char **argv)
       afficher_message1(msg_bal,strlen(msg_bal),1,1);
     }
 
-       
+      
     // reception des messages
-   
+  
     while(i!=nb_message){
       msg_bal=malloc(sizeof(lg_message));
       lg_eff=recv(sock,msg_bal,lg_message,0);
+      printf("hello\n");
       if (lg_eff !=0){
-	afficher_message2(msg_bal,lg_eff,0,i+1,id_r);
+        afficher_message2(msg_bal,lg_eff,0,i+1,id_r);
       }
       else{  //On ne reçoit un message que s'il n'est pas vide
-	exit(1);
+        exit(1);
       }
       i++;
     }
