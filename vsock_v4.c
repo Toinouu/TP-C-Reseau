@@ -47,7 +47,7 @@ void construire_message (char *message, char motif, int lg,int compt) {
   sprintf(num_msg, "%5d",compt);
   memcpy(message ,num_msg,5);
   
-  for (i=6 ; i<=lg; i++) message[i] = motif; 
+  for (i=5; i<=lg; i++) message[i] = motif; 
 }
 void afficher_donnees(int lg , int nbmsg , int s){
   if (s == 1){
@@ -406,31 +406,29 @@ int main(int argc, char **argv)
     msg_bal=malloc(sizeof("E")) ; //On envoie une première lettre "E"
     msg_bal="E" ;
     send(sock,msg_bal,strlen(msg_bal),0);
-    afficher_message1(msg_bal,strlen(msg_bal),1,1);
 
 
     if(nb_message<10){
       msg_bal=malloc(nb_message) ; //On envoie une deuxième lettre avec le nombre de lettre à envoyer
       sprintf(msg_bal,"-%d",nb_message) ; //à voir
       send(sock,msg_bal,strlen(msg_bal),0);
-      afficher_message1(msg_bal,strlen(msg_bal),1,1);
+
     }else{
       msg_bal=malloc(nb_message) ; //On envoie une deuxième lettre avec le nombre de lettre à envoyer
       sprintf(msg_bal,"%d",nb_message) ; //à voir
       send(sock,msg_bal,strlen(msg_bal),0);
-      afficher_message1(msg_bal,strlen(msg_bal),1,1);
     }
   
     if(id_r<10){
       msg_bal=malloc(id_r) ; //On envoie une troisième lettre avec l'identifiant du destinataire
       sprintf(msg_bal,"-%d",id_r) ;
       send(sock,msg_bal,strlen(msg_bal),0);
-      afficher_message1(msg_bal,strlen(msg_bal),1,1);
+
     }else{
       msg_bal=malloc(id_r) ; //On envoie une troisième lettre avec l'identifiant du destinataire
       sprintf(msg_bal,"%d",id_r) ;
       send(sock,msg_bal,strlen(msg_bal),0);
-      afficher_message1(msg_bal,strlen(msg_bal),1,1);
+
     }
 
       
@@ -458,7 +456,6 @@ int main(int argc, char **argv)
     struct sockaddr_in adr_distant;
     char * adr_msg;
     adr_msg=malloc(sizeof(lg_message));
-    int lg_eff;
     unsigned int adr_lg=sizeof(struct sockaddr_in);
     int i=0;
     Liste_bal * ListedeBal = malloc(sizeof(Liste_bal));
@@ -471,7 +468,12 @@ int main(int argc, char **argv)
     adr_local.sin_family=AF_INET;
 
     // Association @->socket
-    bind(sock,(struct sockaddr *)&adr_local,sizeof(adr_local));
+    
+    if (bind(sock,(struct sockaddr *)&adr_local,sizeof(adr_local)) ==-1){
+
+      printf("erreur bind");
+      exit (1);
+    }
     printf("Port=%s, proto=TCP, \n",argv[argc-1]);
     
     //Bufferisation des requêtes
@@ -482,11 +484,11 @@ int main(int argc, char **argv)
       sockbis=accept(sock,(struct sockaddr *)&adr_distant,&adr_lg); 
       
       if (sockbis==-1){
-  printf("PUITS : Echec de la connexion\n");
-  exit(1);
+	printf("PUITS : Echec de la connexion\n");
+	exit(1);
       }
       else{
-  printf("PUITS : Connexion accepté\n");
+	printf("PUITS : Connexion accepté\n");
       }
       
       
@@ -494,13 +496,13 @@ int main(int argc, char **argv)
       //On rappelle que l'en tête fait 4 octets par convention
 
       //Traitement premier octets 'E ou R'
-      lg_eff=recv(sockbis,adr_msg,1,0); 
+      recv(sockbis,adr_msg,1,0); 
      
 
 
       //Cas où requête emettrice
       if (adr_msg[0]=='E'){ 
-      lg_eff=recv(sockbis,adr_msg,2,0);
+      recv(sockbis,adr_msg,2,0);
 
 
       //Traitement 2ème et 3ème octets
@@ -509,97 +511,113 @@ int main(int argc, char **argv)
       }    
       nb_message = atoi(adr_msg) ;
 
-          
       //Traitement 4ème et 5ème octets
-      lg_eff=recv(sockbis,adr_msg,2,0);
+      recv(sockbis,adr_msg,2,0);
       if(adr_msg[0]=='-'){
         adr_msg++;
       }
       id_r = atoi(adr_msg) ;
-        
+  
 
 
       //Reception et stockage des n messages
+      Liste_bal * bal_courante = ListedeBal ;
+      while(bal_courante != NULL && bal_courante -> num_bal != id_r  ){
+              bal_courante = bal_courante -> bal_suiv;
+          }
+       if (bal_courante == NULL){
+	 
+            bal_courante = malloc(sizeof(Liste_bal));
+            bal_courante->num_bal = id_r;
+            bal_courante->bal_suiv = NULL;
+            if(ListedeBal==NULL){
+	      printf("je créée bal n%d\n", bal_courante->num_bal);
+              ListedeBal=bal_courante;
+            }
+	    else{
+	    printf("je créée bal n%d\n", bal_courante->num_bal);
+	    ListedeBal -> bal_suiv = bal_courante;
+	    }
+          }
+
+
       
       for (i=0; i<nb_message;i++){
         read(sockbis,adr_msg,lg_message);
         afficher_message2(adr_msg,lg_message,-1,i+1,id_r);
         liste_lettres * new_lettres =malloc(sizeof(liste_lettres));
-        new_lettres -> contenu = adr_msg;
+	new_lettres -> contenu = malloc(lg_message);
+	strncpy(new_lettres -> contenu,adr_msg,lg_message);
         new_lettres->lettres_suiv = NULL;
-        Liste_bal * bal_courante = ListedeBal ;
 
+	
         //Cas où aucune BAL est presente
-      
-          
-          while(bal_courante != NULL && bal_courante -> num_bal != id_r  ){
-              bal_courante = bal_courante -> bal_suiv;
-          }
-          //Si la bal_i n'existe pas : on la crée et on y insère les lettres
-          if (bal_courante == NULL){
-            
-            bal_courante = malloc(sizeof(Liste_bal));
-            bal_courante->num_bal = id_r;
-            bal_courante->bal_suiv = NULL;
-            bal_courante -> lettres = new_lettres;
-           
-            if(ListedeBal==NULL){
-              ListedeBal=bal_courante;
-            }
-          }
-          //Si elle existe : on insère à la fin de la liste les nouvelles lettres
-          else if (bal_courante -> num_bal == id_r){
-
-            liste_lettres * derniere_lettres = malloc(sizeof(liste_lettres));
-            derniere_lettres = bal_courante -> lettres;
-
+	while(bal_courante -> num_bal != id_r){
+	  bal_courante = bal_courante -> bal_suiv;
+	}
+	if(bal_courante -> lettres == NULL){
+	       bal_courante -> lettres = new_lettres;
+	}
+	else {
+	 liste_lettres * derniere_lettres = malloc(sizeof(liste_lettres));
+         derniere_lettres = bal_courante -> lettres;
             while(derniere_lettres -> lettres_suiv !=NULL){
               derniere_lettres = derniere_lettres-> lettres_suiv;
             }
             derniere_lettres ->lettres_suiv = new_lettres;
+ 
+	}
+          
+         
+          //Si la bal_i n'existe pas : on la crée et on y insère les lettres
+         
+          //Si elle existe : on insère à la fin de la liste les nouvelles lettres
+     
 
-          }
+           
+          
+	  
       }
+      
     } 
       //Cas où requête Receptrice
       //Convention l'en-tete fait toujours 3 octets 
       
       else if (adr_msg[0]=='R') 
       {
-         
         Liste_bal * bal_courante = ListedeBal ;
+	Liste_bal * bal_premiere = ListedeBal;
         //Traitement 2ème et 3ème octets
-        lg_eff=recv(sockbis,adr_msg,2,0);
-        
+        recv(sockbis,adr_msg,2,0);
+
+
             
         if(adr_msg[0]=='-'){
           adr_msg++;
+
         }
 
         id_r = atoi(adr_msg) ;
-        
+
           
         //Envoie des n messages au recepteur
-        for (i=0; i<nb_message;i++){
-        
+	printf("==%d\n",bal_courante ->num_bal);
         while(bal_courante ->num_bal !=id_r){
+	  printf("====%d\n",bal_courante ->num_bal);
           bal_courante=bal_courante -> bal_suiv;
+	  
         }
-        liste_lettres * lettres_i=bal_courante -> lettres;
-        printf("%s",lettres_i->contenu);
+	Liste_bal * bal_i = bal_courante; 
+        liste_lettres * lettres_i=bal_i -> lettres;
         while(lettres_i!=NULL){
-        send(sockbis,lettres_i->contenu,lg_message,0);
-        afficher_message2(lettres_i->contenu,lg_message,0,i+1,id_r);
-        liste_lettres* lettre_suivante = lettres_i->lettres_suiv;
-        
-        lettres_i = lettre_suivante;
+	  send(sockbis,lettres_i->contenu,lg_message,0);
+	  afficher_message2(lettres_i->contenu,lg_message,0,i+1,id_r);
+	  lettres_i = lettres_i->lettres_suiv;
+                
         }
-          
-          
-
-                  //send(sockbis,(a voir),lg_message,0);        // A finir quand on a le stockage effectif
-        
-        }
+	free(bal_i);
+	bal_courante=bal_premiere ;
+	printf("%d\n",ListedeBal -> num_bal);
       }
     }
   }
@@ -637,7 +655,7 @@ int main(int argc, char **argv)
     msg_bal=malloc(sizeof("R")) ; 
     msg_bal="R" ;
     send(sock,msg_bal,strlen(msg_bal),0);
-    
+
 
     //On envoie une deuxième lettre avec l'identifiant du destinataire
     if(id_r<10){
@@ -649,20 +667,20 @@ int main(int argc, char **argv)
       msg_bal=malloc(id_r) ; 
       sprintf(msg_bal,"%d",id_r) ;
       send(sock,msg_bal,strlen(msg_bal),0);
-      
     }
 
       
     // reception des messages
   
     while(i!=nb_message){
-      msg_bal=malloc(sizeof(lg_message));
+      msg_bal=malloc(lg_message);
       lg_eff=recv(sock,msg_bal,lg_message,0);
       if (lg_eff !=0){
-        afficher_message2(msg_bal,lg_eff,0,i+1,id_r);
+	afficher_message2(msg_bal,lg_eff,0,i+1,id_r);
       }
       else{  //On ne reçoit un message que s'il n'est pas vide
-        exit(1);
+	shutdown(sock,1) ;
+	exit(1);
       }
       i++;
     }
