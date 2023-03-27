@@ -522,23 +522,33 @@ int main(int argc, char **argv)
 
       //Reception et stockage des n messages
       Liste_bal * bal_courante = ListedeBal ;
+      Liste_bal * tmp ;
+      
       while(bal_courante != NULL && bal_courante -> num_bal != id_r  ){
               bal_courante = bal_courante -> bal_suiv;
           }
-       if (bal_courante == NULL){
+      if (bal_courante == NULL){
 	 
-            bal_courante = malloc(sizeof(Liste_bal));
-            bal_courante->num_bal = id_r;
-            bal_courante->bal_suiv = NULL;
-            if(ListedeBal==NULL){
-	      printf("je créée bal n%d\n", bal_courante->num_bal);
-              ListedeBal=bal_courante;
-            }
-	    else{
-	    printf("je créée bal n%d\n", bal_courante->num_bal);
-	    ListedeBal -> bal_suiv = bal_courante;
-	    }
-          }
+	bal_courante = malloc(sizeof(Liste_bal));
+	bal_courante->num_bal = id_r;
+	bal_courante->bal_suiv = NULL;
+	if(ListedeBal==NULL){
+	  printf("je créée bal = n%d\n", bal_courante->num_bal);
+	  ListedeBal=bal_courante;
+	}
+	else{
+	  printf("je créée bal == n%d\n", bal_courante->num_bal);
+	  printf("%d",ListedeBal ->num_bal);
+	  tmp=ListedeBal;
+	  while(tmp->bal_suiv != NULL){
+	    printf("%d",tmp ->num_bal);
+	    tmp=tmp->bal_suiv;
+	    printf("%d",tmp ->num_bal);
+	  }
+	      
+	  tmp -> bal_suiv = bal_courante;
+	}
+      }
 
 
       
@@ -586,18 +596,19 @@ int main(int argc, char **argv)
       else if (adr_msg[0]=='R') 
       {
         Liste_bal * bal_courante = ListedeBal ;
-	Liste_bal * bal_premiere = ListedeBal;
+	//Liste_bal * bal_premiere = ListedeBal;
         //Traitement 2ème et 3ème octets
         recv(sockbis,adr_msg,2,0);
-
+	printf("%d\n",adr_msg[0]);
+	printf("%d\n",adr_msg[1]);
 
             
         if(adr_msg[0]=='-'){
           adr_msg++;
-
         }
-
+	printf("%d",adr_msg[0]);
         id_r = atoi(adr_msg) ;
+	printf("id_r %d\n",id_r);
 
           
         //Envoie des n messages au recepteur
@@ -615,8 +626,8 @@ int main(int argc, char **argv)
 	  lettres_i = lettres_i->lettres_suiv;
                 
         }
-	free(bal_i);
-	bal_courante=bal_premiere ;
+	//free(bal_i);
+	//bal_courante=bal_premiere ;
 	printf("%d\n",ListedeBal -> num_bal);
       }
     }
@@ -661,11 +672,13 @@ int main(int argc, char **argv)
     if(id_r<10){
       msg_bal=malloc(id_r) ; 
       sprintf(msg_bal,"-%d",id_r) ;
+      printf("%s\n",msg_bal);
       send(sock,msg_bal,strlen(msg_bal),0);
       
     }else{
       msg_bal=malloc(id_r) ; 
       sprintf(msg_bal,"%d",id_r) ;
+      
       send(sock,msg_bal,strlen(msg_bal),0);
     }
 
